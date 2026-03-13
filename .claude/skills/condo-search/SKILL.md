@@ -6,7 +6,7 @@ allowed-tools: Bash(agent-browser:*)
 
 # Condo Search — Brampton & Mississauga
 
-Maintain a persistent ranked list of qualifying condos at `/workspace/group/recommended_listings.json`. On each run: prune sold/delisted listings, add newly found ones, re-rank, then report the full list (max 20) marking what's new.
+Maintain a persistent ranked list of qualifying condos at `/workspace/group/recommended_listings.json`. On each run: Find 5 new listings, rank them, then report the top 3 listings. After reporting them, re-rank all the listings in the file.
 
 ## When to use
 
@@ -60,18 +60,7 @@ Use these coordinates to calculate proximity (straight-line distance in km). Rep
 
 Read `/workspace/group/recommended_listings.json`. If it doesn't exist, start with an empty array. Collect all existing listing URLs.
 
-### Step 2 — Verify existing listings (prune sold/delisted)
-
-For each existing listing, open its URL:
-```bash
-agent-browser open "<listing_url>"
-agent-browser wait --load networkidle
-agent-browser snapshot -c
-```
-
-Check if the listing is still active (for sale). Signs it's sold/delisted: status shows "Sold", "Conditional", "Terminated", or the page returns a 404/redirect. Remove any sold or delisted listings from the array. Update `last_seen` for still-active ones to today's date.
-
-### Step 3 — Search for new listings
+### Step 2 — Search for new listings
 
 **Mississauga:**
 ```bash
@@ -91,7 +80,7 @@ If URL filters don't apply correctly, use the UI filters manually. Scroll and lo
 
 For each listing card, extract the URL. Skip any URL already in the existing listings array.
 
-### Step 4 — Extract new listing details
+### Step 3 — Extract new listing details
 
 For each new listing URL (not already in recommended_listings.json), open the page and extract:
 - **Address**
@@ -103,7 +92,7 @@ For each new listing URL (not already in recommended_listings.json), open the pa
 - **Property type** (Condo Apt or Condo Townhouse)
 - **Listing URL**
 
-### Step 5 — Filter new listings
+### Step 4 — Filter new listings
 
 Keep only new listings where:
 1. Property type is Condo Apt or Condo Townhouse
@@ -111,11 +100,15 @@ Keep only new listings where:
 3. List price ≤ $600,000
 4. Sigma estimated price ≤ $600,000 (exclude if unavailable or over limit)
 
-### Step 6 — Calculate GO station proximity and apply distance filter
+### Step 5 — Calculate GO station proximity and apply distance filter
 
 For each new qualifying listing, calculate straight-line distance (km) to every GO station using the Haversine formula (or approximate: 1 degree lat ≈ 111 km, 1 degree lng ≈ 79 km at this latitude). Record the nearest station and distance.
 
 **Hard filter: exclude any listing where the nearest GO station is more than 5km away.** There is no soft fallback — if a listing doesn't meet the 5km threshold it is dropped entirely. Set `is_new: true` and `added_at` to today's date on listings that pass.
+
+### Step 6 — Report
+
+Return a formatted ranked list of the top 20 listings from recommended_listings.json, sorted by the ranking above. Mark new listings with 🆕.
 
 ### Step 7 — Merge and re-rank
 
@@ -127,10 +120,6 @@ Sort the full array by:
 3. **Sigma estimated price** — ascending (lower = better)
 
 Keep all qualifying listings (no truncation in storage). Write back to `/workspace/group/recommended_listings.json`.
-
-### Step 8 — Report
-
-Return a formatted ranked list of the top 20 listings from recommended_listings.json, sorted by the ranking above. Mark new listings with 🆕.
 
 ---
 

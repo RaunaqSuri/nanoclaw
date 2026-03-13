@@ -171,14 +171,6 @@ function buildVolumeMounts(
 
   // Gmail credentials directory (for Gmail MCP inside the container)
   const homeDir = os.homedir();
-  const gmailDir = path.join(homeDir, '.gmail-mcp');
-  if (fs.existsSync(gmailDir)) {
-    mounts.push({
-      hostPath: gmailDir,
-      containerPath: '/home/node/.gmail-mcp',
-      readonly: false, // MCP may need to refresh OAuth tokens
-    });
-  }
 
   // Google Workspace CLI credentials (for gws-calendar and other gws skills)
   const gwsConfigDir = path.join(homeDir, '.config', 'gws');
@@ -187,6 +179,16 @@ function buildVolumeMounts(
       hostPath: gwsConfigDir,
       containerPath: '/home/node/.config/gws',
       readonly: false, // gws may need to refresh OAuth tokens/cache
+    });
+  }
+
+  // Browser passwords
+  const agentBrowserDir = path.join(homeDir, '.agent-browser');
+  if (fs.existsSync(agentBrowserDir)) {
+    mounts.push({
+      hostPath: agentBrowserDir,
+      containerPath: '/home/node/.agent-browser/',
+      readonly: false,
     });
   }
 
