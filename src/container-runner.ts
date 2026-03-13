@@ -146,10 +146,15 @@ function buildVolumeMounts(
     );
   }
 
-  // Sync skills from container/skills/ into each group's .claude/skills/
-  const skillsSrc = path.join(process.cwd(), 'container', 'skills');
+  // Sync skills into each group's .claude/skills/ from two sources:
+  //   1. container/skills/ — container-specific skills (agent-browser, todo, etc.)
+  //   2. .claude/skills/   — project skills (condo-search, etc.), available to both Claude Code and container agents
   const skillsDst = path.join(groupSessionsDir, 'skills');
-  if (fs.existsSync(skillsSrc)) {
+  for (const skillsSrc of [
+    path.join(process.cwd(), 'container', 'skills'),
+    path.join(process.cwd(), '.claude', 'skills'),
+  ]) {
+    if (!fs.existsSync(skillsSrc)) continue;
     for (const skillDir of fs.readdirSync(skillsSrc)) {
       const srcDir = path.join(skillsSrc, skillDir);
       if (!fs.statSync(srcDir).isDirectory()) continue;
